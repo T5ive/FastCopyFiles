@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "FastCopyFiles": {
+      "commandName": "Project",
+      "commandLineArgs": "main"
+    }
+  }
+}
