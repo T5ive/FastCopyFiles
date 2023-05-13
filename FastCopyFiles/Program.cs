@@ -157,22 +157,24 @@ internal class Program
 
     private static void Copy()
     {
-        var directory = new DirectoryInfo(_pathInfo!.Path);
-        var patterns = Helper.GetPattern(_pathInfo.Extensions);
-        var list = directory.GetFiles(patterns, SearchOption.AllDirectories);
+        var list = Directory.EnumerateFiles(_pathInfo!.Path, "*.*", SearchOption.AllDirectories)
+            .Where(file => _pathInfo.Extensions.Any(file.EndsWith))
+            .Select(file => new FileInfo(file))
+            .ToArray();
 
-        if (list is { Length: > 0 } && _pathInfo.Replaces is { Count: > 0 })
+
+        if (list is { Length: > 0 })
         {
-            foreach (var replace in _pathInfo.Replaces)
+            var isReplaces = _pathInfo.Replaces is { Count: > 0 };
+            foreach (var result in list)
             {
-                foreach (var result in list)
-                {
-                    var fileName = result.Name;
-                    fileName = fileName.Replace(replace.Find, replace.Replace);
+                var fileName = result.Name;
 
-                    var destination = Path.Combine(Environment.CurrentDirectory, fileName);
-                    File.Move(result.FullName, destination, true);
-                }
+                if (isReplaces)
+                    fileName = _pathInfo.Replaces.Aggregate(fileName, (current, replace) => current.Replace(replace.Find, replace.Replace));
+
+                var destination = Path.Combine(_pathInfo.Path, fileName);
+                File.Move(result.FullName, destination, true);
             }
         }
 
