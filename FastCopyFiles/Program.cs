@@ -16,6 +16,11 @@ internal class Program
 
         LoadSettings();
         GetPathInfo(args[0]);
+        if (args.Length > 1 && args[1] == "-run")
+        {
+            Copy();
+            Environment.Exit(0);
+        }
 
         while (true)
         {
