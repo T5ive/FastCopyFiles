@@ -112,7 +112,8 @@ internal class Program
         ConsoleExtensions.WriteLine("3. Add Find and Replace");
         ConsoleExtensions.WriteLine("4. Remove Extension");
         ConsoleExtensions.WriteLine("5. Remove Find and Replace");
-        ConsoleExtensions.WriteLine("6. Reset");
+        ConsoleExtensions.WriteLine("6. Settings");
+        ConsoleExtensions.WriteLine("7. Reset");
         Console.Write("\nChoose: ");
 
         MakeAction();
@@ -154,6 +155,11 @@ internal class Program
         }
         if (key.StartsWith("6"))
         {
+            Settings();
+            return;
+        }
+        if (key.StartsWith("7"))
+        {
             Reset();
         }
     }
@@ -166,7 +172,6 @@ internal class Program
             .Where(file => _pathInfo.Extensions.Any(file.EndsWith))
             .Select(file => new FileInfo(file))
             .ToArray();
-
 
         if (list is { Length: > 0 })
         {
@@ -183,7 +188,58 @@ internal class Program
             }
         }
 
+        if (_appSetting.AutoDelete)
+        {
+            DeleteEmptySubfolders(_pathInfo.Path);
+        }
+
         Environment.Exit(0);
+    }
+
+    private static void DeleteEmptySubfolders(string folderPath)
+    {
+        try
+        {
+            var subdirectories = Directory.GetDirectories(folderPath);
+
+            foreach (string subdirectory in subdirectories)
+            {
+                DeleteEmptySubfolders(subdirectory);
+
+                if (!Directory.EnumerateFileSystemEntries(subdirectory).Any())
+                {
+                    Directory.Delete(subdirectory);
+                    //Console.WriteLine($"Deleted empty folder: {subdirectory}");
+                }
+            }
+        }
+        catch (DirectoryNotFoundException)
+        {
+            //Console.WriteLine("The specified directory does not exist.");
+        }
+        catch (Exception ex)
+        {
+            // Console.WriteLine($"An error occurred: {ex.Message}");
+        }
+    }
+
+    private static bool IsFolderEmpty(string folderPath)
+    {
+        try
+        {
+            var items = Directory.GetFileSystemEntries(folderPath);
+            return items.Length == 0;
+        }
+        catch (DirectoryNotFoundException)
+        {
+            // Console.WriteLine("The specified directory does not exist.");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            // Console.WriteLine($"An error occurred: {ex.Message}");
+            return false;
+        }
     }
 
     private static void GetInfo()
@@ -212,6 +268,9 @@ internal class Program
             ConsoleExtensions.Write(" -> ", ConsoleColor.Magenta);
             ConsoleExtensions.WriteLine("\"" + replace.Replace + "\"");
         }
+
+        ConsoleExtensions.Write("\nAuto Delete Folder: ", ConsoleColor.Yellow);
+        ConsoleExtensions.WriteLine(_appSetting.AutoDelete.ToString());
 
         ConsoleExtensions.WriteLine("\n=========================================\n\n", ConsoleColor.Cyan);
         ConsoleExtensions.Write("Enter to Go Back...");
@@ -334,6 +393,25 @@ internal class Program
         }
 
         RemoveExtension();
+    }
+
+    private static void Settings()
+    {
+        Console.Clear();
+        ConsoleExtensions.WriteLine("================== Settings ==================", ConsoleColor.Cyan);
+
+        ConsoleExtensions.WriteLine("Enter Empty value to Go Back\n", ConsoleColor.Yellow);
+
+        Console.Write("Auto Delete Folder: ");
+
+        var key = Console.ReadKey();
+
+        if (key.Key == ConsoleKey.Y)
+            _appSetting.AutoDelete = true;
+        else
+            _appSetting.AutoDelete = false;
+
+        _appSetting.Save();
     }
 
     private static void Reset()
